@@ -1,14 +1,14 @@
 package com.example.firebase;
 
-public class famous {
+public class Famous {
     public String name;
     public String famousFor;
     public int rating;
 
-    public famous()
+    public Famous()
     {}
 
-    public famous(String name, String famousFor, int rating) {
+    public Famous(String name, String famousFor, int rating) {
         this.name = name;
         this.famousFor = famousFor;
         this.rating = rating;

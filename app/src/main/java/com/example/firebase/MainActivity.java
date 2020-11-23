@@ -2,7 +2,6 @@ package com.example.firebase;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.FragmentActivity;
 
 import android.os.Bundle;
 import android.widget.Toast;
@@ -53,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
         dr.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
             @Override
             public void onSuccess(DocumentSnapshot documentSnapshot) {
-                famous city=documentSnapshot.toObject(famous.class);
+                Famous city=documentSnapshot.toObject(Famous.class);
                 Toast.makeText(MainActivity.this, city.toString(), Toast.LENGTH_SHORT).show();
             }
         });
@@ -110,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void customClass() {
-        famous city=new famous("jaipur","Hawa mehal",5);
+        Famous city=new Famous("jaipur","Hawa mehal",5);
 
         ff.collection("users")
                 .document("custom")
