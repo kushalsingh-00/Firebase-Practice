@@ -1,9 +1,11 @@
 package com.example.firebase;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -11,13 +13,19 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.Transaction;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -44,7 +52,199 @@ public class MainActivity extends AppCompatActivity {
 //        getMultiDocs();
 //        getdata();
 //        getCustom();
+//        deleteDocs();
+//        deleteFields();
+//        transaction();
+//        batchWrited();
+//        datasetCreated();
+//        queriesExpt();
+//        limit();
+//        realTime();
+        cacheChanges();
+
+    }
+
+    private void cacheChanges() {
+        ff.collection("cities")
+                .whereEqualTo("state","CA")
+                .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
+                        if (error != null) {
+                            Log.w(String.valueOf(MainActivity.this), "listen:error", error);
+                            return;
+                        }
+                        for(DocumentChange dc:value.getDocumentChanges())
+                        {
+                            switch (dc.getType())
+                            {
+                                case ADDED:
+                                    Toast.makeText(MainActivity.this, "Added"+dc.getDocument().getData(), Toast.LENGTH_SHORT).show();
+                                case REMOVED:
+                                    Toast.makeText(MainActivity.this, "Removed"+dc.getDocument().getData(), Toast.LENGTH_SHORT).show();
+                                case MODIFIED:
+                                    Toast.makeText(MainActivity.this, "modified"+dc.getDocument().getData(), Toast.LENGTH_SHORT).show();
+
+                            }
+                        }
+                    }
+                });
+    }
+
+    private void realTime() {
+        DocumentReference dr=ff.collection("cities").document("BJ");
+        dr.addSnapshotListener(new EventListener<DocumentSnapshot>() {
+            @Override
+            public void onEvent(@Nullable DocumentSnapshot value, @Nullable FirebaseFirestoreException error) {
+                if(error!=null)
+                    Log.d(String.valueOf(MainActivity.this), "error");
+
+                //callback from server
+//                if (value!=null&&value.exists())
+//                    Log.d(String.valueOf(MainActivity.this), "present"+value.getData());
+
+                //local changes
+                String source=value!=null&&value.getMetadata().hasPendingWrites()
+                        ?"local":"server";
+                if(value!=null&&value.exists())
+                    Log.d(String.valueOf(MainActivity.this),"values-------"+value.getData());
+
+            }
+        });
+    }
+
+    private void limit() {
+        CollectionReference collectionReference=ff.collection("cities");
+
+        collectionReference.orderBy("name").limit(2)
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if(task.isSuccessful())
+                            for (QueryDocumentSnapshot a:task.getResult())
+                                Log.d(String.valueOf(MainActivity.this),a.getId()+"-----"+a.getData());
+                    }
+                });
+    }
+
+    private void queriesExpt() {
+        CollectionReference cf=ff.collection("cities");
+
+        cf.whereEqualTo("capital",true)
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if(task.isSuccessful())
+                        {
+                            for (QueryDocumentSnapshot queryDocumentSnapshot:task.getResult())
+                                Toast.makeText(MainActivity.this, queryDocumentSnapshot.getId()+"----"+queryDocumentSnapshot.getData(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+    }
+
+    private void datasetCreated() {
+        CollectionReference cities = ff.collection("cities");
+
+        Map<String, Object> data1 = new HashMap<>();
+        data1.put("name", "San Francisco");
+        data1.put("state", "CA");
+        data1.put("country", "USA");
+        data1.put("capital", false);
+        data1.put("population", 860000);
+        data1.put("regions", Arrays.asList("west_coast", "norcal"));
+        cities.document("SF").set(data1);
+
+        Map<String, Object> data2 = new HashMap<>();
+        data2.put("name", "Los Angeles");
+        data2.put("state", "CA");
+        data2.put("country", "USA");
+        data2.put("capital", false);
+        data2.put("population", 3900000);
+        data2.put("regions", Arrays.asList("west_coast", "socal"));
+        cities.document("LA").set(data2);
+
+        Map<String, Object> data3 = new HashMap<>();
+        data3.put("name", "Washington D.C.");
+        data3.put("state", null);
+        data3.put("country", "USA");
+        data3.put("capital", true);
+        data3.put("population", 680000);
+        data3.put("regions", Arrays.asList("east_coast"));
+        cities.document("DC").set(data3);
+
+        Map<String, Object> data4 = new HashMap<>();
+        data4.put("name", "Tokyo");
+        data4.put("state", null);
+        data4.put("country", "Japan");
+        data4.put("capital", true);
+        data4.put("population", 9000000);
+        data4.put("regions", Arrays.asList("kanto", "honshu"));
+        cities.document("TOK").set(data4);
+
+        Map<String, Object> data5 = new HashMap<>();
+        data5.put("name", "Beijing");
+        data5.put("state", null);
+        data5.put("country", "China");
+        data5.put("capital", true);
+        data5.put("population", 21500000);
+        data5.put("regions", Arrays.asList("jingjinji", "hebei"));
+        cities.document("BJ").set(data5);
+
+
+
+    }
+
+    private void batchWrited() {
+        WriteBatch wb=ff.batch();
+        //adding new famous place;
+        DocumentReference dr=ff.collection("users").document("delhi");
+        wb.set(dr,new Famous());
+
+        //changing rating parameter in jaipur custom
+        DocumentReference d1=ff.collection("users").document("custom");
+        wb.update(d1,"rating",10);
+
+        //commit
+        wb.commit();
+    }
+
+    private void transaction() {
+        final DocumentReference dref=ff.collection("users").document("custom");
         
+        ff.runTransaction(new Transaction.Function<Void>() {
+            @Nullable
+            @Override
+            public Void apply(@NonNull Transaction transaction) throws FirebaseFirestoreException {
+                DocumentSnapshot ds=transaction.get(dref);
+
+                double rating=ds.getDouble("rating")+1;
+                transaction.update(dref,"rating",rating);
+                return null;
+            }
+        });
+    }
+
+    private void deleteFields() {
+        DocumentReference dd=ff.collection("users").document("vm");
+
+        Map<String,Object> mp=new HashMap<>();
+
+        mp.put("age",FieldValue.delete());
+
+        dd.update(mp);
+    }
+
+    private void deleteDocs() {
+        ff.collection("users").document("vm")
+                .delete().addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                Toast.makeText(MainActivity.this, "deleted", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void getCustom() {
